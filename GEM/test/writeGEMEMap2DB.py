@@ -28,7 +28,7 @@ options.register( 'targetConnection',
                      if not empty (default), this provides the latest IOV and payloads to compare;
                      it is the DB where payloads should be finally uploaded.""" )
 options.register( 'tag',
-                  'GEMeMapFull',
+                  'GEMeMapB904Data',
                   VarParsing.VarParsing.multiplicity.singleton,
                   VarParsing.VarParsing.varType.string,
                   "Tag written in destinationConnection and finally appended in targetConnection." )
