@@ -65,7 +65,7 @@ void popcon::GEMEMapSourceHandler::getNewObjects()
   mapfiles.push_back("chamberMapFull.csv");
   mapfiles.push_back("vfatTypeListFull.csv");
   mapfiles.push_back("HV3bV3ChMapFull.csv");
-  // VFAT Postion Map 
+  // Chamber Map 
   GEMeMap::GEMChamberMap cMap;
   std::string field, line;
   std::string filename(baseCMS+mapfiles[0]);
@@ -75,7 +75,7 @@ void popcon::GEMEMapSourceHandler::getNewObjects()
   while(std::getline(maptype, line)){
     unsigned int fedId_, amcNum_, gebId_;
     //uint8_t amcNum_, gebId_;
-    int  region_, station_, layer_, chamberSec_, vfatVer_; 
+    int  region_, station_, layer_, chamberSec_, vfatVer_, chamberType_; 
     std::stringstream ssline(line);
     getline( ssline, field, ',' );
     std::stringstream FEDID(field);
@@ -93,74 +93,24 @@ void popcon::GEMEMapSourceHandler::getNewObjects()
     std::stringstream CHAMBERSEC(field);
     getline( ssline, field, ',' );
     std::stringstream VFATVER(field);
+    getline( ssline, field, ',' );
+    std::stringstream CHAMBERTYPE(field);
 
     FEDID >> fedId_; AMCNUM >> amcNum_; GEBID >> gebId_;
-    REGION >> region_; STATION >> station_; LAYER >> layer_; CHAMBERSEC >> chamberSec_; VFATVER >> vfatVer_; 
+    REGION >> region_; STATION >> station_; LAYER >> layer_; CHAMBERSEC >> chamberSec_; VFATVER >> vfatVer_, CHAMBERTYPE >> chamberType_; 
 
     std::cout << "fedId: " << fedId_ << ", AMC#: " << amcNum_ << ", gebId: " << gebId_ <<
     ", region: " << region_ << ", station: " << station_ << ", layer: " << layer_ << ", chamberSec: " << chamberSec_ << 
-    ", vfatVer" << vfatVer_ << std::endl;
+    ", vfatVer" << vfatVer_ << ", chamberType" << chamberType_ << std::endl;
 
     cMap.fedId.push_back(fedId_);
     cMap.amcNum.push_back(amcNum_);
     cMap.gebId.push_back(gebId_);
     cMap.gemNum.push_back(region_*(station_*1000 + layer_*100 + chamberSec_));
     cMap.vfatVer.push_back(vfatVer_);
+    cMap.chamberType.push_back(chamberType_);
   }
   eMap->theChamberMap_.push_back(cMap);
-
-  GEMeMap::GEMVFatMap vMap;
-  std::string filename1(baseCMS+mapfiles[1]);
-  std::ifstream maptype1(filename1.c_str());
-  std::cout << filename1 << std::endl;
-  while(std::getline(maptype1, line)){
-    uint16_t vfatAdd_;
-    int region_, station_, layer_, chamberSec_, vfatType_,  iEta_, localPhi_;
-    
-    std::stringstream ssline(line);
-    getline( ssline, field, ',' );
-    std::stringstream VFATTYPE(field);
-    getline( ssline, field, ',' );
-    std::stringstream VFATVER(field);
-    getline( ssline, field, ',' );
-    std::stringstream REGION(field);
-    getline( ssline, field, ',' );
-    std::stringstream STATION(field);
-    getline( ssline, field, ',' );
-    std::stringstream LAYER(field);
-    getline( ssline, field, ',' );
-    std::stringstream CHAMBERSEC(field);
-    getline( ssline, field, ',' );
-    std::stringstream IETA(field);
-    getline( ssline, field, ',' );
-    std::stringstream LOCALPHI(field);
-   
-
-    REGION >> region_; STATION >> station_; LAYER >> layer_; CHAMBERSEC >> chamberSec_;  
-    VFATTYPE >> vfatType_; IETA >> iEta_; LOCALPHI >> localPhi_;
-
-    if (vfatType_ < 10) { 
-      getline( ssline, field, ',' );
-      char* chr = strdup(field.c_str());
-      vfatAdd_ = strtol(chr,NULL,16);
-    }
-    else{
-      getline( ssline, field, ',' );
-      std::stringstream VFATADD(field);
-      VFATADD >> vfatAdd_;
-    }
-
-    std::cout << "vfatAdd: " << vfatAdd_ << ", vfatType: " << vfatType_ << 
-    ", region: " << region_ << ", station: " << station_ << ", layer: " << layer_ << ", chamberSec: " << chamberSec_ <<
-    ", iEta:" << iEta_ << ", localPhi: " << localPhi_ << std::endl;
-
-    vMap.vfatAdd.push_back(vfatAdd_);
-    vMap.vfatType.push_back(vfatType_);
-    vMap.iEta.push_back(iEta_);
-    vMap.localPhi.push_back(localPhi_);
-    vMap.gemNum.push_back(region_*(station_*1000 + layer_*100 + chamberSec_)); 
-  }
-  eMap->theVFatMap_.push_back(vMap);
 
   // VFAT Channel-Strip Map
   GEMeMap::GEMStripMap chStMap;
@@ -168,22 +118,25 @@ void popcon::GEMEMapSourceHandler::getNewObjects()
   std::ifstream maptype2(filename2.c_str());
   std::cout << filename2 << std::endl;
   while(std::getline(maptype2, line)){
-    int vfatType_, vfatCh_, vfatStrip_;
+    int chamberType_, vfatCh_, iEta_, strip_;
 
     std::stringstream ssline(line);   
     getline( ssline, field, ',' );
-    std::stringstream VFATTYPE(field);
-    getline( ssline, field, ',' );
-    std::stringstream VFATSTRIP(field);
+    std::stringstream CHAMBERTYPE(field);
     getline( ssline, field, ',' );
     std::stringstream VFATCH(field);
-    VFATTYPE >> vfatType_; VFATSTRIP >> vfatStrip_; VFATCH >> vfatCh_;
+    getline( ssline, field, ',' );
+    std::stringstream IETA(field);
+    getline( ssline, field, ',' );
+    std::stringstream STRIP(field);
+    CHAMBERTYPE >> chamberType_; VFATCH >> vfatCh_; IETA >> iEta_; STRIP >> strip_; 
     
-    std::cout << "vfatType: " << vfatType_ << ", vfatStrip: " << vfatStrip_ << ", vfatChannel:" << vfatCh_ << std::endl;  
+    std::cout << "chamberType: " << chamberType_ << ", vfatChannel:" << vfatCh_ << ", iEta:" << iEta_ << ", strip: " << strip_ << std::endl;  
 
-    chStMap.vfatType.push_back(vfatType_);
-    chStMap.vfatStrip.push_back(vfatStrip_);
+    chStMap.chamberType.push_back(chamberType_);
     chStMap.vfatCh.push_back(vfatCh_);
+    chStMap.iEta.push_back(iEta_);
+    chStMap.strip.push_back(strip_);
   }
   eMap->theStripMap_.push_back(chStMap); 
     
