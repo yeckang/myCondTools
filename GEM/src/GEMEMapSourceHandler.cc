@@ -4,6 +4,7 @@
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
 
+#include "DataFormats/MuonDetId/interface/GEMDetId.h"
 #include "RelationalAccess/ISessionProxy.h"
 #include "RelationalAccess/ITransaction.h"
 #include "RelationalAccess/ISchema.h"
@@ -19,7 +20,6 @@
 #include <cstdlib>
 #include <vector>
 
-#include <DataFormats/MuonDetId/interface/GEMDetId.h>
 
 popcon::GEMEMapSourceHandler::GEMEMapSourceHandler( const edm::ParameterSet& ps ):
   m_name( ps.getUntrackedParameter<std::string>( "name", "GEMEMapSourceHandler" ) ),
@@ -27,7 +27,9 @@ popcon::GEMEMapSourceHandler::GEMEMapSourceHandler( const edm::ParameterSet& ps 
   m_validate( ps.getUntrackedParameter<int>( "Validate", 1 ) ),
   m_connect( ps.getParameter<std::string>( "connect" ) ),
   m_connectionPset( ps.getParameter<edm::ParameterSet>( "DBParameters" ) ),
-  m_conf_type( ps.getParameter<std::string>("QC8ConfType"))
+  m_conf_type( ps.getParameter<std::string>("QC8ConfType")),
+  m_chamberMap_file( ps.getParameter<edm::FileInPath>("chamberMap").fullPath() ),
+  m_chamberMap_file( ps.getParameter<edm::FileInPath>("stripChannelMap").fullPath() ),
 {
 }
 
@@ -57,16 +59,14 @@ void popcon::GEMEMapSourceHandler::getNewObjects()
   char buffer[20];
   strftime(buffer,20,"%d/%m/%Y_%H:%M:%S",ptm);
   std::string eMap_version( buffer );
-  eMap =  new GEMeMap(eMap_version);
+  eMap =  new GEMChMap(eMap_version);
   
-  std::string baseCMS = std::string(getenv("CMSSW_BASE"))+std::string("/src/CondTools/GEM/data/");  
+  std::string baseCMS = std::string(getenv("CMSSW_BASE"))+std::string("/src/myCondTools/GEM/data/");  
   std::vector<std::string> mapfiles;
 
-  mapfiles.push_back("chamberMapFull.csv");
-  mapfiles.push_back("vfatTypeListFull.csv");
-  mapfiles.push_back("HV3bV3ChMapFull.csv");
+  mapfiles.push_back("chamberMap2022.csv");
+  mapfiles.push_back("stripChannelMap.csv");
   // Chamber Map 
-  GEMeMap::GEMChamberMap cMap;
   std::string field, line;
   std::string filename(baseCMS+mapfiles[0]);
   std::ifstream maptype(filename.c_str());
@@ -75,7 +75,7 @@ void popcon::GEMEMapSourceHandler::getNewObjects()
   while(std::getline(maptype, line)){
     unsigned int fedId_, amcNum_, gebId_;
     //uint8_t amcNum_, gebId_;
-    int  region_, station_, layer_, chamberSec_, vfatVer_, chamberType_; 
+    int  region_, station_, layer_, chamberSec_, chamberType_; 
     std::stringstream ssline(line);
     getline( ssline, field, ',' );
     std::stringstream FEDID(field);
@@ -92,59 +92,86 @@ void popcon::GEMEMapSourceHandler::getNewObjects()
     getline( ssline, field, ',' );
     std::stringstream CHAMBERSEC(field);
     getline( ssline, field, ',' );
-    std::stringstream VFATVER(field);
-    getline( ssline, field, ',' );
     std::stringstream CHAMBERTYPE(field);
 
     FEDID >> fedId_; AMCNUM >> amcNum_; GEBID >> gebId_;
-    REGION >> region_; STATION >> station_; LAYER >> layer_; CHAMBERSEC >> chamberSec_; VFATVER >> vfatVer_, CHAMBERTYPE >> chamberType_; 
+    REGION >> region_; STATION >> station_; LAYER >> layer_; CHAMBERSEC >> chamberSec_; CHAMBERTYPE >> chamberType_; 
 
+    GEMChMap::chamEC ec;
+    ec.fedId = fedId_;
+    ec.amcNum = amcNum_;
+    ec.gebId = gebId_;
+
+    GEMChMap::chamDC dc;
+    dc.detId = GEMDetId(region_,
+                        1,
+                        station_,
+                        layer_,
+                        chamberSec_,
+                        0);
+    dc.chamberType = chamberType_;
+
+    eMap->add(ec,dc);
+
+    GEMChMap::sectorEC amcEC;
+    amcEC.fedId = fedId_;
+    amcEC.amcNum = amcNum_;
+
+    if (!eMap->isValidAMC(fedId_, amcNum_)) eMap->add(amcEC);
+    
     std::cout << "fedId: " << fedId_ << ", AMC#: " << amcNum_ << ", gebId: " << gebId_ <<
     ", region: " << region_ << ", station: " << station_ << ", layer: " << layer_ << ", chamberSec: " << chamberSec_ << 
-    ", vfatVer" << vfatVer_ << ", chamberType" << chamberType_ << std::endl;
-
-    cMap.fedId.push_back(fedId_);
-    cMap.amcNum.push_back(amcNum_);
-    cMap.gebId.push_back(gebId_);
-    cMap.gemNum.push_back(region_*(station_*1000 + layer_*100 + chamberSec_));
-    cMap.vfatVer.push_back(vfatVer_);
-    cMap.chamberType.push_back(chamberType_);
+    ", chamberType" << chamberType_ << std::endl;
   }
-  eMap->theChamberMap_.push_back(cMap);
 
   // VFAT Channel-Strip Map
-  GEMeMap::GEMStripMap chStMap;
-  std::string filename2(baseCMS+mapfiles[2]);
+  std::string filename2(baseCMS+mapfiles[1]);
   std::ifstream maptype2(filename2.c_str());
   std::cout << filename2 << std::endl;
   while(std::getline(maptype2, line)){
-    int chamberType_, vfatCh_, iEta_, strip_;
+    int chamberType_, vfat_, vfatCh_, iEta_, strip_;
 
     std::stringstream ssline(line);   
     getline( ssline, field, ',' );
     std::stringstream CHAMBERTYPE(field);
+    getline( ssline, field, ',' );
+    std::stringstream VFAT(field);
     getline( ssline, field, ',' );
     std::stringstream VFATCH(field);
     getline( ssline, field, ',' );
     std::stringstream IETA(field);
     getline( ssline, field, ',' );
     std::stringstream STRIP(field);
-    CHAMBERTYPE >> chamberType_; VFATCH >> vfatCh_; IETA >> iEta_; STRIP >> strip_; 
+    CHAMBERTYPE >> chamberType_; VFAT >> vfat_; VFATCH >> vfatCh_; IETA >> iEta_; STRIP >> strip_; 
     
-    std::cout << "chamberType: " << chamberType_ << ", vfatChannel:" << vfatCh_ << ", iEta:" << iEta_ << ", strip: " << strip_ << std::endl;  
+    //std::cout << "chamberType: " << chamberType_ << ", vfat:" << vfat_ << ", vfatChannel:" << vfatCh_ << ", iEta:" << iEta_ << ", strip: " << strip_ << std::endl;  
 
-    chStMap.chamberType.push_back(chamberType_);
-    chStMap.vfatCh.push_back(vfatCh_);
-    chStMap.iEta.push_back(iEta_);
-    chStMap.strip.push_back(strip_);
+    GEMChMap::channelNum cMap;
+    cMap.chamberType = chamberType_;
+    cMap.vfatAdd = vfat_;
+    cMap.chNum = vfatCh_;
+
+    GEMChMap::stripNum sMap;
+    sMap.chamberType = chamberType_;
+    sMap.iEta = iEta_;
+    sMap.stNum = strip_;
+
+    eMap->add(cMap, sMap);
+    eMap->add(sMap, cMap);
+
+    GEMChMap::vfatEC ec;
+    ec.vfatAdd = vfat_;
+    ec.chamberType = chamberType_;
+
+    eMap->add(chamberType_, vfat_);
+    eMap->add(ec, iEta_);
   }
-  eMap->theStripMap_.push_back(chStMap); 
     
   cond::Time_t snc = mydbservice->currentTime();  
   // look for recent changes
   int difference=1;
   if (difference==1) {
-    m_to_transfer.push_back(std::make_pair((GEMeMap*)eMap,snc));
+    m_to_transfer.push_back(std::make_pair((GEMChMap*)eMap,snc));
   }
 }
 

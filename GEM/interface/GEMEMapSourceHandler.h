@@ -2,14 +2,14 @@
 #define GEMEMAPSOURCEHANDLER
 
 #include "CondCore/PopCon/interface/PopConSourceHandler.h"
-#include "CondFormats/GEMObjects/interface/GEMeMap.h"
+#include "CondFormats/GEMObjects/interface/GEMChMap.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include <string>
 
 namespace popcon
 {
-  class GEMEMapSourceHandler : public popcon::PopConSourceHandler<GEMeMap>
+  class GEMEMapSourceHandler : public popcon::PopConSourceHandler<GEMChMap>
   {
       
   public:
@@ -24,7 +24,7 @@ namespace popcon
       
   private:
       
-    GEMeMap * eMap;
+    GEMChMap * eMap;
     cond::persistency::Session session; // additional work
     std::string m_name;
     int m_dummy;

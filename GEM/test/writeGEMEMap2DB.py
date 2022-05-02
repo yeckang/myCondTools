@@ -7,7 +7,7 @@ sourceConnection = 'oracle://cms_omds_lb/CMS_RPC_CONF'
 sourceConnection = 'oracle://cms_omds_adg/CMS_COND_GENERAL_R'
 #sourceConnection = 'oracle://cms_omds_lb/CMS_COND_GENERAL_R'
 
-confType = "Full"
+confType = "2022"
 
 options = VarParsing.VarParsing()
 options.register( 'runNumber',
@@ -16,7 +16,7 @@ options.register( 'runNumber',
                   VarParsing.VarParsing.varType.int,
                   "Run number to be uploaded." )
 options.register( 'destinationConnection',
-                  'sqlite_file:GEMeMap_{}.db'.format(confType), #default value
+                  'sqlite_file:GEMChMap_{}.db'.format(confType), #default value
                   VarParsing.VarParsing.multiplicity.singleton,
                   VarParsing.VarParsing.varType.string,
                   "Connection string to the DB where payloads will be possibly written." )
@@ -28,7 +28,7 @@ options.register( 'targetConnection',
                      if not empty (default), this provides the latest IOV and payloads to compare;
                      it is the DB where payloads should be finally uploaded.""" )
 options.register( 'tag',
-                  'GEMeMapFull',
+                  'GEMChMap2022',
                   VarParsing.VarParsing.multiplicity.singleton,
                   VarParsing.VarParsing.varType.string,
                   "Tag written in destinationConnection and finally appended in targetConnection." )
@@ -70,12 +70,12 @@ process.source = cms.Source( "EmptyIOVSource",
 process.PoolDBOutputService = cms.Service( "PoolDBOutputService",
                                            CondDBConnection,
                                            timetype = cms.untracked.string( 'runnumber' ),
-                                           toPut = cms.VPSet( cms.PSet( record = cms.string( 'GEMeMapRcd' ),
+                                           toPut = cms.VPSet( cms.PSet( record = cms.string( 'GEMChMapRcd' ),
                                                                         tag = cms.string( options.tag ) ) ) )
 
 process.WriteInDB = cms.EDAnalyzer( "GEMEMapDBWriter",
                                     SinceAppendMode = cms.bool( True ),
-                                    record = cms.string( 'GEMeMapRcd' ),
+                                    record = cms.string( 'GEMChMapRcd' ),
                                     Source = cms.PSet( SourceDBConnection,
                                                        QC8ConfType = cms.string("vfatTypeListQC8_%s.csv"%confType),
                                                        loggingOn = cms.untracked.bool( False ),
@@ -86,7 +86,7 @@ process.WriteInDB = cms.EDAnalyzer( "GEMEMapDBWriter",
 """
 process.WriteInDB = cms.EDAnalyzer( "GEMEMapDBWriter",
                                     SinceAppendMode = cms.bool( True ),
-                                    record = cms.string( 'GEMEMapRcd' ),
+                                    record = cms.string( 'GEMChMapRcd' ),
                                     loggingOn = cms.untracked.bool( False ),
                                     Source = cms.PSet( SourceDBConnection,
                                                        OnlineAuthPath = cms.untracked.string('/afs/cern.ch/cms/DB/conddb/'),
