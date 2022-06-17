@@ -59,12 +59,11 @@ void popcon::GEMEMapSourceHandler::getNewObjects()
   std::string eMap_version( buffer );
   eMap =  new GEMeMap(eMap_version);
   
-  std::string baseCMS = std::string(getenv("CMSSW_BASE"))+std::string("/src/CondTools/GEM/data/");  
+  std::string baseCMS = std::string(getenv("CMSSW_BASE"))+std::string("/src/myCondTools/GEM/data/");  
   std::vector<std::string> mapfiles;
 
-  mapfiles.push_back("chamberMapFull.csv");
-  mapfiles.push_back("vfatTypeListFull.csv");
-  mapfiles.push_back("HV3bV3ChMapFull.csv");
+  mapfiles.push_back("chamberMapTestBeam.csv");
+  mapfiles.push_back("stripChannelMap.csv");
   // Chamber Map 
   GEMeMap::GEMChamberMap cMap;
   std::string field, line;
@@ -114,28 +113,33 @@ void popcon::GEMEMapSourceHandler::getNewObjects()
 
   // VFAT Channel-Strip Map
   GEMeMap::GEMStripMap chStMap;
-  std::string filename2(baseCMS+mapfiles[2]);
+  std::string filename2(baseCMS+mapfiles[1]);
   std::ifstream maptype2(filename2.c_str());
   std::cout << filename2 << std::endl;
   while(std::getline(maptype2, line)){
-    int chamberType_, vfatCh_, iEta_, strip_;
+    int chamberType_, vfat_, vfatCh_, iEta_, strip_;
 
     std::stringstream ssline(line);   
     getline( ssline, field, ',' );
     std::stringstream CHAMBERTYPE(field);
+    getline( ssline, field, ',' );
+    std::stringstream VFAT(field);
     getline( ssline, field, ',' );
     std::stringstream VFATCH(field);
     getline( ssline, field, ',' );
     std::stringstream IETA(field);
     getline( ssline, field, ',' );
     std::stringstream STRIP(field);
-    CHAMBERTYPE >> chamberType_; VFATCH >> vfatCh_; IETA >> iEta_; STRIP >> strip_; 
+    CHAMBERTYPE >> chamberType_; VFAT >> vfat_; VFATCH >> vfatCh_; IETA >> iEta_; STRIP >> strip_; 
     
-    std::cout << "chamberType: " << chamberType_ << ", vfatChannel:" << vfatCh_ << ", iEta:" << iEta_ << ", strip: " << strip_ << std::endl;  
+    //std::cout << "chamberType: " << chamberType_ << ", vfat:" << vfat_ << ", vfatChannel:" << vfatCh_ << ", iEta:" << iEta_ << ", strip: " << strip_ << std::endl;  
 
     chStMap.chamberType.push_back(chamberType_);
+    chStMap.vfatAdd.push_back(vfat_);
     chStMap.vfatCh.push_back(vfatCh_);
     chStMap.iEta.push_back(iEta_);
+    //if (chamberType_ > 30) chStMap.strip.push_back(384 - strip_);
+    //else chStMap.strip.push_back(strip_);
     chStMap.strip.push_back(strip_);
   }
   eMap->theStripMap_.push_back(chStMap); 

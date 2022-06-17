@@ -7,7 +7,7 @@ sourceConnection = 'oracle://cms_omds_lb/CMS_RPC_CONF'
 sourceConnection = 'oracle://cms_omds_adg/CMS_COND_GENERAL_R'
 #sourceConnection = 'oracle://cms_omds_lb/CMS_COND_GENERAL_R'
 
-confType = "Full"
+confType = "TestBeam"
 
 options = VarParsing.VarParsing()
 options.register( 'runNumber',
@@ -28,7 +28,7 @@ options.register( 'targetConnection',
                      if not empty (default), this provides the latest IOV and payloads to compare;
                      it is the DB where payloads should be finally uploaded.""" )
 options.register( 'tag',
-                  'GEMeMapFull',
+                  'GEMeMapTestBeam',
                   VarParsing.VarParsing.multiplicity.singleton,
                   VarParsing.VarParsing.varType.string,
                   "Tag written in destinationConnection and finally appended in targetConnection." )
