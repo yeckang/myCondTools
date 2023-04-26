@@ -27,9 +27,7 @@ popcon::GEMEMapSourceHandler::GEMEMapSourceHandler( const edm::ParameterSet& ps 
   m_validate( ps.getUntrackedParameter<int>( "Validate", 1 ) ),
   m_connect( ps.getParameter<std::string>( "connect" ) ),
   m_connectionPset( ps.getParameter<edm::ParameterSet>( "DBParameters" ) ),
-  m_conf_type( ps.getParameter<std::string>("QC8ConfType")),
-  m_chamberMap_file( ps.getParameter<edm::FileInPath>("chamberMap").fullPath() ),
-  m_chamberMap_file( ps.getParameter<edm::FileInPath>("stripChannelMap").fullPath() ),
+  m_conf_type( ps.getParameter<std::string>("QC8ConfType"))
 {
 }
 
